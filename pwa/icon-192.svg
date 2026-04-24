@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#81C784"/>
+      <stop offset="100%" style="stop-color:#5BA97B"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="40" fill="url(#bg)"/>
+  <!-- Pill capsule -->
+  <rect x="60" y="48" width="72" height="96" rx="36" fill="#fff" opacity="0.95"/>
+  <rect x="60" y="48" width="72" height="48" rx="36" fill="#FFB74D" opacity="0.85"/>
+  <line x1="60" y1="96" x2="132" y2="96" stroke="#eee" stroke-width="1.5"/>
+  <!-- Heart -->
+  <g transform="translate(96,130)">
+    <path d="M0-8C-4-16-16-16-16-8C-16 0-0 12 0 16C0 12 16 0 16-8C16-16 4-16 0-8Z" fill="#E57373" opacity="0.9"/>
+  </g>
+  <!-- Plus sign -->
+  <g transform="translate(96,76)" fill="#fff" opacity="0.8">
+    <rect x="-8" y="-2" width="16" height="4" rx="2"/>
+    <rect x="-2" y="-8" width="4" height="16" rx="2"/>
+  </g>
+</svg>

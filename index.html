@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,maximum-scale=1,user-scalable=no"/>
+<title>小药盒</title>
+<meta name="theme-color" content="#5BA97B"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="icon" type="image/svg+xml" href="icon-192.svg"/>
+<link rel="apple-touch-icon" href="icon-192.svg"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{background:#FFF8F0;font-family:"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;color:#333;display:flex;justify-content:center}
+.app{width:100%;max-width:480px;height:100%;display:flex;flex-direction:column;position:relative;background:#FFF8F0}
+*::-webkit-scrollbar{display:none}
+*{scrollbar-width:none}
+
+.content{flex:1;overflow-y:auto;padding:0 20px 20px;padding-top:env(safe-area-inset-top,12px);-webkit-overflow-scrolling:touch}
+
+/* Tab bar */
+.tab-bar{background:#fff;border-top:1px solid #eee;display:flex;align-items:center;justify-content:space-around;flex-shrink:0;padding:8px 0;padding-bottom:max(8px,env(safe-area-inset-bottom))}
+.tab-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;transition:transform .15s;min-width:48px}
+.tab-item:active{transform:scale(.9)}
+.tab-item .icon{font-size:22px;line-height:1}
+.tab-item .label{font-size:10px;color:#999}
+.tab-item.active .label{color:#5BA97B;font-weight:600}
+
+/* Animations */
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* Home */
+.greeting{font-size:24px;font-weight:700;color:#333;margin:16px 0 4px}
+.greeting-sub{font-size:13px;color:#999;margin-bottom:16px}
+.summary-row{display:flex;gap:12px;margin-bottom:16px}
+.summary-card{flex:1;background:#fff;border-radius:16px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.summary-card .num{font-size:28px;font-weight:700;color:#5BA97B}
+.summary-card .desc{font-size:11px;color:#999;margin-top:2px}
+.section-title{font-size:15px;font-weight:600;color:#333;margin:16px 0 10px;display:flex;align-items:center;gap:6px}
+
+.med-card{background:#fff;border-radius:16px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.04);cursor:pointer;transition:transform .15s,box-shadow .15s;animation:slideUp .4s ease backwards}
+.med-card:active{transform:scale(.97);box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.med-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.med-info{flex:1;min-width:0}
+.med-name{font-size:14px;font-weight:600;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.med-dose{font-size:11px;color:#999;margin-top:2px}
+.med-status{font-size:12px;padding:4px 10px;border-radius:20px;font-weight:500;flex-shrink:0}
+.med-status.taken{background:#E8F5E9;color:#5BA97B}
+.med-status.pending{background:#FFF3E0;color:#F4A460}
+
+/* Progress ring */
+.progress-wrap{display:flex;align-items:center;gap:16px;margin-bottom:12px}
+.progress-ring{position:relative;width:100px;height:100px;flex-shrink:0}
+.progress-ring svg{transform:rotate(-90deg)}
+.progress-ring circle{fill:none;stroke-width:8}
+.progress-ring .bg{stroke:#eee}
+.progress-ring .fg{stroke:#5BA97B;stroke-linecap:round;transition:stroke-dashoffset .8s ease}
+.progress-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.progress-text .pct{font-size:24px;font-weight:700;color:#5BA97B}
+.progress-text .lbl{font-size:10px;color:#999}
+
+/* Medicine list */
+.med-list-card{background:#fff;border-radius:16px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.04);animation:slideUp .4s ease backwards;cursor:pointer}
+.med-list-card:active{transform:scale(.97)}
+.badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500;display:inline-block;margin-top:4px}
+.badge.cardiovascular{background:#FFEBEE;color:#E57373}
+.badge.digest{background:#FFF3E0;color:#FFB74D}
+.badge.vitamin{background:#E8F5E9;color:#66BB6A}
+.badge.pain{background:#F3E5F5;color:#BA68C8}
+.badge.other{background:#E3F2FD;color:#64B5F6}
+.stock-warn{font-size:10px;color:#E57373;font-weight:600;margin-top:2px}
+.fab{width:52px;height:52px;border-radius:50%;background:#5BA97B;color:#fff;font-size:24px;display:flex;align-items:center;justify-content:center;margin:16px auto;cursor:pointer;box-shadow:0 4px 12px rgba(91,169,123,.4);transition:transform .15s;border:none}
+.fab:active{transform:scale(.9)}
+
+/* Calendar */
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin:16px 0 12px}
+.cal-header .month{font-size:18px;font-weight:700;color:#333}
+.cal-nav{width:36px;height:36px;border-radius:50%;background:#fff;border:none;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.cal-nav:active{background:#f0f0f0}
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px;color:#999;margin-bottom:6px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:12px;font-size:13px;color:#333;cursor:pointer;position:relative;transition:background .15s}
+.cal-day:active{background:#f0f0f0}
+.cal-day.today{background:#5BA97B;color:#fff;font-weight:700}
+.cal-day.selected{outline:2px solid #5BA97B;outline-offset:-2px}
+.cal-day .dot{width:5px;height:5px;border-radius:50%;margin-top:2px}
+.cal-day .dot.green{background:#5BA97B}
+.cal-day .dot.yellow{background:#F4A460}
+.cal-day .dot.empty{background:transparent}
+.cal-day.other{color:#ccc}
+.cal-detail{background:#fff;border-radius:16px;padding:14px;margin-top:12px;box-shadow:0 2px 8px rgba(0,0,0,.04);animation:fadeIn .3s ease}
+.cal-detail-title{font-size:14px;font-weight:600;color:#333;margin-bottom:8px}
+.cal-detail-item{font-size:12px;color:#666;padding:4px 0;display:flex;align-items:center;gap:6px}
+
+/* Stats */
+.stat-card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.stat-card h3{font-size:14px;font-weight:600;color:#333;margin-bottom:12px}
+.bar-chart{display:flex;align-items:flex-end;justify-content:space-around;height:120px;gap:8px}
+.bar-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.bar{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(to top,#5BA97B,#81C784);transition:height .6s ease;min-height:4px}
+.bar-label{font-size:10px;color:#999}
+.bar-value{font-size:10px;color:#5BA97B;font-weight:600}
+.streak-row{display:flex;gap:12px}
+.streak-card{flex:1;text-align:center;padding:12px;background:#F9FBF9;border-radius:12px}
+.streak-card .num{font-size:28px;font-weight:700;color:#5BA97B}
+.streak-card .lbl{font-size:11px;color:#999;margin-top:2px}
+
+/* Profile */
+.profile-header{text-align:center;padding:20px 0}
+.avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#81C784,#5BA97B);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 8px;cursor:pointer}
+.avatar:active{transform:scale(.95)}
+.profile-name{font-size:18px;font-weight:700;color:#333;cursor:pointer}
+.profile-sub{font-size:12px;color:#999}
+.settings-group{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.04);margin-bottom:12px}
+.settings-item{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f5f5f5;cursor:pointer;transition:background .15s}
+.settings-item:last-child{border-bottom:none}
+.settings-item:active{background:#f9f9f9}
+.settings-item .left{display:flex;align-items:center;gap:10px;font-size:14px;color:#333}
+.settings-item .left span:first-child{font-size:18px}
+.settings-item .arrow{color:#ccc;font-size:14px}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+.modal-overlay.show{opacity:1;pointer-events:auto}
+.modal{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:20px;padding-bottom:max(20px,env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .3s ease}
+.modal-overlay.show .modal{transform:translateY(0)}
+.modal-title{font-size:18px;font-weight:700;color:#333;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.modal-close{width:32px;height:32px;border-radius:50%;background:#f0f0f0;border:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;color:#999;margin-bottom:6px;display:block}
+.form-input{width:100%;padding:10px 14px;border:1.5px solid #eee;border-radius:12px;font-size:14px;outline:none;transition:border-color .2s;background:#FAFAFA;font-family:inherit}
+.form-input:focus{border-color:#5BA97B;background:#fff}
+.form-select{width:100%;padding:10px 14px;border:1.5px solid #eee;border-radius:12px;font-size:14px;outline:none;background:#FAFAFA;font-family:inherit;appearance:none;-webkit-appearance:none}
+.time-chips{display:flex;flex-wrap:wrap;gap:8px}
+.time-chip{padding:6px 14px;border-radius:20px;font-size:13px;border:1.5px solid #eee;cursor:pointer;transition:all .2s;background:#FAFAFA}
+.time-chip.active{background:#E8F5E9;border-color:#5BA97B;color:#5BA97B;font-weight:600}
+.emoji-grid{display:flex;flex-wrap:wrap;gap:8px}
+.emoji-opt{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;border:1.5px solid #eee;transition:all .2s}
+.emoji-opt.active{border-color:#5BA97B;background:#E8F5E9}
+.btn-primary{width:100%;padding:14px;border:none;border-radius:14px;background:#5BA97B;color:#fff;font-size:16px;font-weight:600;cursor:pointer;transition:opacity .2s;font-family:inherit}
+.btn-primary:active{opacity:.8}
+.btn-danger{width:100%;padding:12px;border:none;border-radius:14px;background:#fff;color:#E57373;font-size:14px;font-weight:500;cursor:pointer;margin-top:8px;border:1.5px solid #FFCDD2;font-family:inherit}
+.btn-danger:active{background:#FFF5F5}
+
+/* Empty state */
+.empty-state{text-align:center;padding:60px 20px}
+.empty-state .emoji{font-size:64px;margin-bottom:16px}
+.empty-state .title{font-size:18px;font-weight:600;color:#333;margin-bottom:8px}
+.empty-state .desc{font-size:13px;color:#999;margin-bottom:24px}
+.btn-outline{padding:10px 24px;border:1.5px solid #5BA97B;border-radius:24px;background:none;color:#5BA97B;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit}
+.btn-outline:active{background:#E8F5E9}
+
+/* Toast */
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.8);background:rgba(0,0,0,.75);color:#fff;padding:10px 20px;border-radius:12px;font-size:13px;z-index:200;opacity:0;pointer-events:none;transition:all .25s}
+.toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="content" id="content"></div>
+  <div class="tab-bar" id="tabBar"></div>
+</div>
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalBody"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== STORAGE =====
+const STORE_KEYS = {meds:'pb_meds',records:'pb_records',profile:'pb_profile',bestStreak:'pb_best'};
+function loadData(key,def){try{const v=localStorage.getItem(key);return v?JSON.parse(v):def}catch(e){return def}}
+function saveData(key,val){try{localStorage.setItem(key,JSON.stringify(val))}catch(e){}}
+
+let medicines = loadData(STORE_KEYS.meds, []);
+let takenRecords = loadData(STORE_KEYS.records, {});
+let profile = loadData(STORE_KEYS.profile, {name:'',avatar:'🐱'});
+let bestStreakSaved = loadData(STORE_KEYS.bestStreak, 0);
+let nextId = medicines.length ? Math.max(...medicines.map(m=>m.id))+1 : 1;
+
+function saveMeds(){saveData(STORE_KEYS.meds,medicines)}
+function saveRecords(){saveData(STORE_KEYS.records,takenRecords)}
+function saveProfile(){saveData(STORE_KEYS.profile,profile)}
+
+const categoryClass={"心血管":"cardiovascular","消化系统":"digest","维生素":"vitamin","止痛":"pain","其他":"other"};
+const categoryColors={"心血管":"#FFEBEE","消化系统":"#FFF3E0","维生素":"#E8F5E9","止痛":"#F3E5F5","其他":"#E3F2FD"};
+const defaultEmojis=['💊','❤️','☀️','🩹','🦠','💉','🧬','🩺','🏥','🌿'];
+const defaultTimes=['06:00','07:00','08:00','09:00','12:00','13:00','18:00','19:00','20:00','21:00','22:00'];
+
+function dateKey(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1500)}
+
+// ===== STATE =====
+let currentTab="home";
+let calYear,calMonth,calSelected;
+(function(){const n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();calSelected=dateKey(n)})();
+
+// ===== TABS =====
+const tabs=[{id:"home",icon:"🏠",label:"首页"},{id:"meds",icon:"💊",label:"药品"},{id:"calendar",icon:"📅",label:"日历"},{id:"stats",icon:"📊",label:"统计"},{id:"profile",icon:"👤",label:"我的"}];
+function renderTabs(){document.getElementById("tabBar").innerHTML=tabs.map(t=>'<div class="tab-item '+(t.id===currentTab?'active':'')+'" onclick="switchTab(\''+t.id+'\')"><span class="icon">'+t.icon+'</span><span class="label">'+t.label+'</span></div>').join("")}
+function switchTab(id){currentTab=id;renderTabs();renderPage()}
+function renderPage(){const c=document.getElementById("content");c.scrollTop=0;switch(currentTab){case"home":c.innerHTML=renderHome();break;case"meds":c.innerHTML=renderMeds();break;case"calendar":c.innerHTML=renderCalendar();break;case"stats":c.innerHTML=renderStats();break;case"profile":c.innerHTML=renderProfile();break}setTimeout(()=>{document.querySelectorAll('.progress-ring .fg').forEach(el=>{const t=el.getAttribute('data-target');if(t)el.style.strokeDashoffset=t})},50)}
+
+// ===== MODAL =====
+function showModal(html){document.getElementById('modalBody').innerHTML=html;document.getElementById('modalOverlay').classList.add('show')}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('show')}
+
+// ===== HOME =====
+function getGreeting(){const h=new Date().getHours();if(h<6)return["🌙 晚安","记得按时吃药哦"];if(h<12)return["🌅 早上好","新的一天，按时服药~"];if(h<18)return["☀️ 下午好","别忘了下午的药哦"];return["🌙 晚上好","今天的药都吃了吗？"]}
+
+function getTodaySchedule(){const tk=dateKey(new Date());const schedule=[];medicines.forEach(m=>{m.times.forEach(t=>{const taken=!!(takenRecords[tk]&&takenRecords[tk][m.id+"_"+t]);schedule.push({med:m,time:t,taken})})});schedule.sort((a,b)=>a.time.localeCompare(b.time));return schedule}
+
+function toggleTaken(medId,time){const tk=dateKey(new Date());if(!takenRecords[tk])takenRecords[tk]={};const key=medId+"_"+time;const wasTaken=takenRecords[tk][key];takenRecords[tk][key]=!wasTaken;
+// stock management
+if(!wasTaken){const m=medicines.find(x=>x.id===medId);if(m&&m.stock>0){m.stock--;saveMeds();if(m.stock===0)toast('⚠️ '+m.name+' 库存已用完！');else if(m.stock<=5)toast('⚠️ '+m.name+' 库存剩余'+m.stock)}}else{const m=medicines.find(x=>x.id===medId);if(m){m.stock++;saveMeds()}}
+saveRecords();renderPage()}
+
+function calcStreak(){let streak=0;const today=new Date();for(let d=1;d<=365;d++){const dt=new Date(today);dt.setDate(dt.getDate()-d);const tk=dateKey(dt);const rec=takenRecords[tk];if(!rec)break;let total=0,done=0;medicines.forEach(m=>{m.times.forEach(t=>{total++;if(rec[m.id+"_"+t])done++})});if(total===0||done/total<0.8)break;streak++}return streak}
+
+function renderHome(){const[greet,sub]=getGreeting();const schedule=getTodaySchedule();const total=schedule.length;const done=schedule.filter(s=>s.taken).length;const pct=total?Math.round(done/total*100):100;const streak=calcStreak();if(streak>bestStreakSaved){bestStreakSaved=streak;saveData(STORE_KEYS.bestStreak,bestStreakSaved)}
+const circumference=2*Math.PI*42;const offset=circumference-(pct/100)*circumference;const name=profile.name||'你';
+let html='<div class="greeting">'+greet+'，'+name+'</div><div class="greeting-sub">'+sub+'</div>';
+if(medicines.length===0){html+='<div class="empty-state"><div class="emoji">💊</div><div class="title">还没有添加药品</div><div class="desc">点击下方"药品"标签添加你的第一个药品吧</div></div>';return html}
+html+='<div class="progress-wrap"><div class="progress-ring"><svg width="100" height="100"><circle class="bg" cx="50" cy="50" r="42"/><circle class="fg" cx="50" cy="50" r="42" stroke-dasharray="'+circumference+'" stroke-dashoffset="'+circumference+'" data-target="'+offset+'"/></svg><div class="progress-text"><span class="pct">'+pct+'%</span><span class="lbl">今日完成</span></div></div><div style="flex:1"><div class="summary-card" style="margin-bottom:8px"><div class="num">'+streak+'</div><div class="desc">连续打卡天数 🔥</div></div><div class="summary-card"><div class="num">'+medicines.length+'</div><div class="desc">管理药品数</div></div></div></div>';
+html+='<div class="section-title">📋 今日用药计划</div>';
+if(schedule.length===0){html+='<div style="text-align:center;padding:30px;color:#999;font-size:13px">今天没有需要服用的药物 🎉</div>'}else{schedule.forEach((s,i)=>{html+='<div class="med-card" style="animation-delay:'+i*0.05+'s" onclick="toggleTaken('+s.med.id+',\''+s.time+'\')"><div class="med-icon" style="background:'+s.med.color+'">'+s.med.icon+'</div><div class="med-info"><div class="med-name">'+s.med.name+'</div><div class="med-dose">'+s.med.dose+' · '+s.time+'</div></div><div class="med-status '+(s.taken?'taken':'pending')+'">'+(s.taken?'已服用 ✓':'待服用')+'</div></div>'})}
+return html}
+
+// ===== MEDICINE LIST =====
+function renderMeds(){let html='<div class="section-title" style="margin-top:16px">💊 我的药品 ('+medicines.length+')</div>';
+if(medicines.length===0){html+='<div class="empty-state"><div class="emoji">📦</div><div class="title">药品箱是空的</div><div class="desc">添加你正在服用的药品，开始管理用药计划</div><button class="btn-outline" onclick="showAddMed()">+ 添加药品</button></div>';return html}
+medicines.forEach((m,i)=>{const cls=categoryClass[m.category]||"other";html+='<div class="med-list-card" style="animation-delay:'+i*0.05+'s" onclick="showEditMed('+m.id+')"><div class="med-icon" style="background:'+(m.color||categoryColors[m.category]||"#E3F2FD")+'">'+m.icon+'</div><div class="med-info"><div class="med-name">'+m.name+'</div><div class="med-dose">'+m.dose+' · '+m.freq+'</div><span class="badge '+cls+'">'+m.category+'</span>'+(m.stock<=5?'<div class="stock-warn">⚠️ 库存不足：剩余'+m.stock+'</div>':'')+'</div></div>'});
+html+='<button class="fab" onclick="showAddMed()">+</button>';
+return html}
+
+// ===== ADD/EDIT MEDICINE =====
+function showAddMed(){showMedForm(null)}
+function showEditMed(id){const m=medicines.find(x=>x.id===id);if(m)showMedForm(m)}
+function showMedForm(med){const isEdit=!!med;const m=med||{name:'',dose:'',freq:'每日1次',times:['08:00'],category:'其他',icon:'💊',stock:30};
+let html='<div class="modal-title"><span>'+(isEdit?'编辑药品':'添加药品')+'</span><button class="modal-close" onclick="closeModal()">✕</button></div>';
+html+='<div class="form-group"><label class="form-label">药品名称</label><input class="form-input" id="medName" value="'+m.name+'" placeholder="如：阿莫西林胶囊"/></div>';
+html+='<div class="form-group"><label class="form-label">剂量</label><input class="form-input" id="medDose" value="'+m.dose+'" placeholder="如：0.5g / 1粒"/></div>';
+html+='<div class="form-group"><label class="form-label">频率</label><select class="form-select" id="medFreq"><option '+(m.freq==='每日1次'?'selected':'')+'>每日1次</option><option '+(m.freq==='每日2次'?'selected':'')+'>每日2次</option><option '+(m.freq==='每日3次'?'selected':'')+'>每日3次</option><option '+(m.freq==='需要时'?'selected':'')+'>需要时</option></select></div>';
+html+='<div class="form-group"><label class="form-label">服药时间</label><div class="time-chips" id="timeChips">';
+defaultTimes.forEach(t=>{html+='<div class="time-chip'+(m.times.includes(t)?' active':'')+'" onclick="toggleTimeChip(this)" data-time="'+t+'">'+t+'</div>'});
+html+='</div></div>';
+html+='<div class="form-group"><label class="form-label">分类</label><select class="form-select" id="medCat"><option '+(m.category==='心血管'?'selected':'')+'>心血管</option><option '+(m.category==='消化系统'?'selected':'')+'>消化系统</option><option '+(m.category==='维生素'?'selected':'')+'>维生素</option><option '+(m.category==='止痛'?'selected':'')+'>止痛</option><option '+(m.category==='其他'?'selected':'')+'>其他</option></select></div>';
+html+='<div class="form-group"><label class="form-label">图标</label><div class="emoji-grid" id="emojiGrid">';
+defaultEmojis.forEach(e=>{html+='<div class="emoji-opt'+(m.icon===e?' active':'')+'" onclick="selectEmoji(this)" data-emoji="'+e+'">'+e+'</div>'});
+html+='</div></div>';
+html+='<div class="form-group"><label class="form-label">库存数量</label><input class="form-input" id="medStock" type="number" value="'+m.stock+'" min="0"/></div>';
+html+='<button class="btn-primary" onclick="saveMedForm('+(isEdit?m.id:'null')+')">保存</button>';
+if(isEdit)html+='<button class="btn-danger" onclick="deleteMed('+m.id+')">🗑️ 删除该药品</button>';
+showModal(html)}
+
+function toggleTimeChip(el){el.classList.toggle('active')}
+function selectEmoji(el){document.querySelectorAll('#emojiGrid .emoji-opt').forEach(e=>e.classList.remove('active'));el.classList.add('active')}
+
+function saveMedForm(editId){const name=document.getElementById('medName').value.trim();const dose=document.getElementById('medDose').value.trim();const freq=document.getElementById('medFreq').value;const cat=document.getElementById('medCat').value;const stock=parseInt(document.getElementById('medStock').value)||0;
+const times=[];document.querySelectorAll('#timeChips .time-chip.active').forEach(el=>times.push(el.dataset.time));
+const emojiEl=document.querySelector('#emojiGrid .emoji-opt.active');const icon=emojiEl?emojiEl.dataset.emoji:'💊';
+if(!name){toast('请输入药品名称');return}if(!dose){toast('请输入剂量');return}
+const color=categoryColors[cat]||'#E3F2FD';
+if(editId!==null){const m=medicines.find(x=>x.id===editId);if(m){Object.assign(m,{name,dose,freq,times,category:cat,icon,stock,color})}}else{medicines.push({id:nextId++,name,dose,freq,times,category:cat,icon,stock,color})}
+saveMeds();closeModal();renderPage();toast(editId!==null?'已更新 ✓':'已添加 ✓')}
+
+function deleteMed(id){if(confirm('确定要删除该药品吗？')){medicines=medicines.filter(m=>m.id!==id);saveMeds();closeModal();renderPage();toast('已删除')}}
+
+// ===== CALENDAR =====
+function renderCalendar(){const monthNames=["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
+let html='<div class="cal-header"><button class="cal-nav" onclick="calPrev()">◀</button><span class="month">'+calYear+'年 '+monthNames[calMonth]+'</span><button class="cal-nav" onclick="calNext()">▶</button></div>';
+html+='<div class="cal-weekdays"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div><div class="cal-grid">';
+const firstDay=new Date(calYear,calMonth,1).getDay();const daysInMonth=new Date(calYear,calMonth+1,0).getDate();const prevDays=new Date(calYear,calMonth,0).getDate();const todayKey=dateKey(new Date());
+for(let i=firstDay-1;i>=0;i--)html+='<div class="cal-day other">'+(prevDays-i)+'</div>';
+for(let d=1;d<=daysInMonth;d++){const dk=calYear+"-"+String(calMonth+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");const isToday=dk===todayKey;const isSel=dk===calSelected;let dotClass="empty";const rec=takenRecords[dk];if(rec){let total=0,done=0;medicines.forEach(m=>{m.times.forEach(t=>{total++;if(rec[m.id+"_"+t])done++})});if(total>0)dotClass=done/total>=0.8?"green":"yellow"}
+html+='<div class="cal-day'+(isToday?' today':'')+(isSel&&!isToday?' selected':'')+'" onclick="calSelect(\''+dk+'\')">'+d+'<div class="dot '+dotClass+'"></div></div>'}
+const totalCells=firstDay+daysInMonth;const remaining=totalCells%7===0?0:7-totalCells%7;for(let i=1;i<=remaining;i++)html+='<div class="cal-day other">'+i+'</div>';
+html+='</div>';html+=renderCalDetail();return html}
+
+function calPrev(){calMonth--;if(calMonth<0){calMonth=11;calYear--}renderPage()}
+function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++}renderPage()}
+function calSelect(dk){calSelected=dk;renderPage()}
+
+function renderCalDetail(){const rec=takenRecords[calSelected]||{};const items=[];medicines.forEach(m=>{m.times.forEach(t=>{items.push({name:m.name,icon:m.icon,time:t,taken:!!rec[m.id+"_"+t]})})});items.sort((a,b)=>a.time.localeCompare(b.time));
+if(items.length===0)return '<div class="cal-detail"><div class="cal-detail-title">📋 '+calSelected+'</div><div style="color:#999;font-size:12px;padding:8px 0">当天无用药记录</div></div>';
+let html='<div class="cal-detail"><div class="cal-detail-title">📋 '+calSelected+'</div>';items.forEach(it=>{html+='<div class="cal-detail-item">'+it.icon+' '+it.time+' '+it.name+' — <span style="color:'+(it.taken?'#5BA97B':'#F4A460')+';font-weight:500">'+(it.taken?'已服用 ✓':'未服用')+'</span></div>'});
+html+='</div>';return html}
+
+// ===== STATS =====
+function renderStats(){if(medicines.length===0)return '<div class="empty-state" style="margin-top:40px"><div class="emoji">📊</div><div class="title">暂无统计数据</div><div class="desc">添加药品并开始记录后，这里会展示你的服药统计</div></div>';
+let html='<div class="section-title" style="margin-top:16px">📊 服药统计</div>';
+html+='<div class="stat-card"><h3>近7天服药率</h3><div class="bar-chart">';
+const dayLabels=["日","一","二","三","四","五","六"];const today=new Date();
+for(let d=6;d>=0;d--){const dt=new Date(today);dt.setDate(dt.getDate()-d);const dk=dateKey(dt);const rec=takenRecords[dk]||{};let total=0,done=0;medicines.forEach(m=>{m.times.forEach(t=>{total++;if(rec[m.id+"_"+t])done++})});const pct=total?Math.round(done/total*100):0;html+='<div class="bar-col"><div class="bar-value">'+pct+'%</div><div class="bar" style="height:'+Math.max(pct,4)+'%"></div><div class="bar-label">'+dayLabels[dt.getDay()]+'</div></div>'}
+html+='</div></div>';
+const streak=calcStreak();
+html+='<div class="stat-card"><h3>打卡成就</h3><div class="streak-row"><div class="streak-card"><div class="num">'+streak+'</div><div class="lbl">当前连续 🔥</div></div><div class="streak-card"><div class="num">'+bestStreakSaved+'</div><div class="lbl">最佳记录 🏆</div></div></div></div>';
+html+='<div class="stat-card"><h3>各药品服药率</h3>';
+medicines.filter(m=>m.times.length>0).forEach(m=>{let total=0,done=0;for(let d=0;d<7;d++){const dt=new Date(today);dt.setDate(dt.getDate()-d);const dk=dateKey(dt);const rec=takenRecords[dk]||{};m.times.forEach(t=>{total++;if(rec[m.id+"_"+t])done++})}const pct=total?Math.round(done/total*100):0;html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:16px">'+m.icon+'</span><span style="font-size:12px;color:#333;flex:1">'+m.name+'</span><div style="width:100px;height:8px;background:#eee;border-radius:4px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:linear-gradient(to right,#81C784,#5BA97B);border-radius:4px;transition:width .6s ease"></div></div><span style="font-size:11px;color:#5BA97B;font-weight:600;width:36px;text-align:right">'+pct+'%</span></div>'});
+html+='</div>';return html}
+
+// ===== PROFILE =====
+function renderProfile(){const streak=calcStreak();const days=streak+15;
+let html='<div class="profile-header"><div class="avatar" onclick="changeAvatar()">'+profile.avatar+'</div><div class="profile-name" onclick="changeName()">'+( profile.name||'点击设置昵称')+'</div><div class="profile-sub">已坚持用药管理 '+days+' 天</div></div>';
+html+='<div class="settings-group"><div class="settings-item" onclick="changeName()"><div class="left"><span>✏️</span><span>修改昵称</span></div><span class="arrow">›</span></div><div class="settings-item" onclick="changeAvatar()"><div class="left"><span>😊</span><span>修改头像</span></div><span class="arrow">›</span></div></div>';
+html+='<div class="settings-group"><div class="settings-item" onclick="requestNotification()"><div class="left"><span>🔔</span><span>用药提醒</span></div><span class="arrow">›</span></div><div class="settings-item" onclick="exportData()"><div class="left"><span>📤</span><span>导出数据</span></div><span class="arrow">›</span></div><div class="settings-item" onclick="importData()"><div class="left"><span>📥</span><span>导入数据</span></div><span class="arrow">›</span></div></div>';
+html+='<div class="settings-group"><div class="settings-item" onclick="loadDemoData()"><div class="left"><span>📋</span><span>加载示例数据</span></div><span class="arrow">›</span></div><div class="settings-item" onclick="clearAllData()"><div class="left"><span>🗑️</span><span>清除所有数据</span></div><span class="arrow">›</span></div></div>';
+html+='<div style="text-align:center;margin-top:16px;font-size:11px;color:#ccc">小药盒 v2.0 · 用心守护每一次服药 💚</div>';return html}
+
+function changeName(){const n=prompt('请输入你的昵称：',profile.name||'');if(n!==null){profile.name=n.trim();saveProfile();renderPage();toast('昵称已更新')}}
+function changeAvatar(){const avatars=['🐱','🐶','🐼','🦊','🐰','🐻','🦁','🐯','🐨','🐮','👩','👨','👧','👦','🧑'];
+let html='<div class="modal-title"><span>选择头像</span><button class="modal-close" onclick="closeModal()">✕</button></div><div class="emoji-grid">';
+avatars.forEach(a=>{html+='<div class="emoji-opt'+(profile.avatar===a?' active':'')+'" onclick="setAvatar(\''+a+'\')" style="width:48px;height:48px;font-size:28px">'+a+'</div>'});
+html+='</div>';showModal(html)}
+function setAvatar(a){profile.avatar=a;saveProfile();closeModal();renderPage();toast('头像已更新')}
+
+function requestNotification(){if(!('Notification' in window)){toast('当前浏览器不支持通知');return}
+Notification.requestPermission().then(p=>{if(p==='granted'){toast('提醒已开启 🔔');scheduleNotifications()}else{toast('提醒被拒绝，请在浏览器设置中开启')}})}
+
+function scheduleNotifications(){if(Notification.permission!=='granted')return;const now=new Date();const tk=dateKey(now);medicines.forEach(m=>{m.times.forEach(t=>{const[h,min]=t.split(':').map(Number);const target=new Date(now);target.setHours(h,min,0,0);const diff=target-now;if(diff>0&&diff<86400000){setTimeout(()=>{new Notification('💊 该吃药啦',{body:m.name+' '+m.dose+' - '+t,icon:'icon-192.svg'})},diff)}})})}
+
+function exportData(){const data={medicines,takenRecords,profile,bestStreak:bestStreakSaved,exportTime:new Date().toISOString()};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='pillbox_backup_'+dateKey(new Date())+'.json';a.click();URL.revokeObjectURL(url);toast('数据已导出 📤')}
+
+function importData(){const input=document.createElement('input');input.type='file';input.accept='.json';input.onchange=e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{try{const data=JSON.parse(ev.target.result);if(data.medicines){medicines=data.medicines;nextId=medicines.length?Math.max(...medicines.map(m=>m.id))+1:1;saveMeds()}if(data.takenRecords){takenRecords=data.takenRecords;saveRecords()}if(data.profile){profile=data.profile;saveProfile()}if(data.bestStreak){bestStreakSaved=data.bestStreak;saveData(STORE_KEYS.bestStreak,bestStreakSaved)}renderPage();toast('数据已导入 ✓')}catch(err){toast('文件格式错误')}};reader.readAsText(file)};input.click()}
+
+function loadDemoData(){if(medicines.length>0&&!confirm('当前已有药品数据，加载示例会覆盖，确定吗？'))return;
+medicines=[{id:1,name:"阿莫西林胶囊",dose:"0.5g",freq:"每日3次",times:["08:00","12:00","18:00"],category:"消化系统",icon:"💊",color:"#FFF3E0",stock:5},{id:2,name:"氨氯地平片",dose:"5mg",freq:"每日1次",times:["08:00"],category:"心血管",icon:"❤️",color:"#FFEBEE",stock:30},{id:3,name:"维生素D3",dose:"1粒",freq:"每日1次",times:["08:00"],category:"维生素",icon:"☀️",color:"#E8F5E9",stock:45},{id:4,name:"布洛芬缓释胶囊",dose:"0.3g",freq:"需要时",times:[],category:"止痛",icon:"🩹",color:"#F3E5F5",stock:12},{id:5,name:"益生菌",dose:"1袋",freq:"每日2次",times:["08:00","20:00"],category:"消化系统",icon:"🦠",color:"#FFF3E0",stock:3}];
+nextId=6;
+// Generate some past records
+const today=new Date();for(let d=1;d<=7;d++){const dt=new Date(today);dt.setDate(dt.getDate()-d);const key=dateKey(dt);takenRecords[key]={};medicines.forEach(m=>{m.times.forEach(t=>{if(Math.random()>0.2)takenRecords[key][m.id+"_"+t]=true})})}
+saveMeds();saveRecords();renderPage();toast('示例数据已加载 ✓')}
+
+function clearAllData(){if(!confirm('确定清除所有数据吗？此操作不可恢复！'))return;medicines=[];takenRecords={};profile={name:'',avatar:'🐱'};bestStreakSaved=0;nextId=1;localStorage.clear();renderPage();toast('数据已清除')}
+
+// ===== INIT =====
+renderTabs();renderPage();
+// Schedule notifications on load
+if(Notification.permission==='granted')scheduleNotifications();
+// Re-render on visibility change (coming back to app)
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)renderPage()});
+// Register service worker
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+</script>
+</body>
+</html>
